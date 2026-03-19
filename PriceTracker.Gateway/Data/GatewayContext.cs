@@ -10,19 +10,22 @@ public class GatewayDbContext : DbContext
     {
     }
 
-    public DbSet<User> Users { get; set; }
-    public DbSet<Shop> Shops { get; set; }
+    public DbSet<SimpleRegistrationUser> SimpleRegistrationUser { get; set; }   
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(entity =>
+        modelBuilder.Entity<SimpleRegistrationUser>(entity =>
         {
-            entity.ToTable("Users");
+            entity.ToTable("SimpleRegistrationUser");
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.Email)
                 .IsRequired()
-                .HasMaxLength(256);
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Password)
+                .IsRequired()
+                .HasMaxLength(100);
 
             entity.HasIndex(e => e.Email)
                 .IsUnique();
@@ -30,26 +33,6 @@ public class GatewayDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
         });
-
-        modelBuilder.Entity<Shop>(entity =>
-        {
-            entity.ToTable("Shops");
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Name)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.Property(e => e.Domain)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            entity.HasIndex(e => e.Domain)
-                .IsUnique();
-
-            entity.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
-        });
+        
     }
 }
