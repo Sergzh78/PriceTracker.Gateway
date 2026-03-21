@@ -14,9 +14,9 @@ namespace PriceTracker.Wildberries.Worker.Entities
         public string Name { get; set; }
         public string Url { get; set; } = string.Empty;
         public decimal ThresholdPrice { get; set; }
-        public DateTime ParseFromDate { get; set; }
         public DateTime ParseToDate { get; set; }
-        public object Email { get; set; }
+        public DateTime LastParseDate { get; set; }
+        public string Email { get; set; }
         public DateTime CreatedAt { get; set; }
         public TStatus Status { get; set; }
 

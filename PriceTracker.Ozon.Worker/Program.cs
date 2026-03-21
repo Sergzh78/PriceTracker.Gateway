@@ -25,6 +25,7 @@ builder.Services.AddTransient<IMessageBus, RabbitMqBus>();
 // Фоновые службы
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddHostedService<HistoryRequestWorker>();
+builder.Services.AddHostedService<TaskCreationWorker>();
 
 var host = builder.Build();
 host.Run();

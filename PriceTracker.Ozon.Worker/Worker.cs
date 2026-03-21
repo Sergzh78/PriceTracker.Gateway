@@ -59,7 +59,7 @@ namespace PriceTracker.Ozon.Worker
             var dbContext = scope.ServiceProvider.GetRequiredService<OzonDbContext>();
 
             return await dbContext.OzonTasks
-                .Where(x => x.LastParseDate > DateTime.UtcNow.AddHours(-1))
+                .Where(x => x.LastParseDate < DateTime.UtcNow.AddMinutes(GlobalSettings.Ozon.GetPriceIntervalMinutes))
                 .Where(x => x.ParseToDate <= DateTime.UtcNow)
                 .Where(x => x.Status == TStatus.Active)
                 .OrderBy(x => x.LastParseDate)

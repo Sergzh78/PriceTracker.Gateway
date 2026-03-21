@@ -1,24 +1,55 @@
-namespace PriceTracker.Notification
+using PriceTracker.Shared.Contracts;
+using PriceTracker.Shared.Infrastructure.MessageBus;
+
+namespace PriceTracker.Notification;
+
+public class NotificationWorker : BackgroundService
 {
-    public class Worker : BackgroundService
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public NotificationWorker(IServiceScopeFactory scopeFactory)
     {
-        private readonly ILogger<Worker> _logger;
+        _scopeFactory = scopeFactory;
+    }
 
-        public Worker(ILogger<Worker> logger)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            _logger = logger;
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                if (_logger.IsEnabled(LogLevel.Information))
+                using (var scope = _scopeFactory.CreateScope())
                 {
-                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+
+                    var notification = await messageBus.ConsumeAsync<NotificationEvent>(
+                        QueueNames.NotificationTasks,
+                        stoppingToken);
+
+                    if (notification != null)
+                    {                        
+                        await NotificateAsync(notification, stoppingToken);
+                        continue; 
+                    }
                 }
+                
+                await Task.Delay(1000, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                //logger
                 await Task.Delay(1000, stoppingToken);
             }
         }
+    }
+
+    private async Task NotificateAsync(NotificationEvent notification, CancellationToken stoppingToken)
+    {
+        //TODO: send email
+        await Task.CompletedTask;
     }
 }

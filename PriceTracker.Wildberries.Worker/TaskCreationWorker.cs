@@ -1,17 +1,12 @@
-﻿using PriceTracker.Ozon.Worker.Data;
-using PriceTracker.Ozon.Worker.Entities;
-using PriceTracker.Shared.Constants;
+﻿using PriceTracker.Shared.Constants;
 using PriceTracker.Shared.Contracts;
 using PriceTracker.Shared.DTO;
 using PriceTracker.Shared.Infrastructure.MessageBus;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using PriceTracker.Wildberries.Worker.Data;
+using PriceTracker.Wildberries.Worker.Entities;
 
 namespace PriceTracker.Ozon.Worker
-{    
+{
     public class TaskCreationWorker : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
@@ -31,7 +26,7 @@ namespace PriceTracker.Ozon.Worker
                     using (var scope = _scopeFactory.CreateScope())
                     {
                         var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                        var dbContext = scope.ServiceProvider.GetRequiredService<OzonDbContext>();
+                        var dbContext = scope.ServiceProvider.GetRequiredService<WbDbContext>();
 
                         var request = await messageBus.ConsumeAsync<CreateTask>(
                             QueueNames.OzonCreateTasks,
@@ -39,20 +34,20 @@ namespace PriceTracker.Ozon.Worker
 
                         if (request != null)
                         {
-                            var task = new OzonTask
+                            var task = new WbTask
                             {
                                 Id = Guid.NewGuid(),
                                 Name = request.ProductName,
                                 Url = request.Url,
                                 ThresholdPrice = request.ThresholdPrice,
-                                LastParseDate = DateTime.UtcNow,
+                                LastParseDate = DateTime.MinValue,
                                 ParseToDate = DateTime.UtcNow.AddDays(10),
                                 Email = request.Email,
                                 CreatedAt = DateTime.UtcNow,
                                 Status = TStatus.Active
                             };
 
-                            await dbContext.OzonTasks.AddAsync(task);
+                            await dbContext.WbTasks.AddAsync(task);
                             await dbContext.SaveChangesAsync();
                             continue;
                         }

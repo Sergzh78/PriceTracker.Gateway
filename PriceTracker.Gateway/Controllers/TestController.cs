@@ -32,19 +32,18 @@ public class TestController : ControllerBase
         try
         {
             // Значения по умолчанию, если параметры не переданы
-            var task = new Ozon
+            var task = new CreateTask
             {
                 Url = url ?? "https://www.ozon.ru/product/example-smartphone-123456789",
-                Name = name ?? "Тестовый смартфон",
+                ProductName = name ?? "Cмартфон2",
                 Email = email ?? "test@example.com",
-                ThresholdPrice = thresholdPrice ?? 10000m,
-                ParseToDate = DateTime.UtcNow.AddDays(daysToParse)
+                ThresholdPrice = thresholdPrice ?? 20000m,                
             };
 
             // Публикуем задачу в очередь для воркера
             await _messageBus.PublishAsync(
                 task,
-                QueueNames.OzonCteateTasks, // Предполагаю, что такая очередь есть
+                QueueNames.OzonCreateTasks, 
                 HttpContext.RequestAborted);
 
             return Ok(new
@@ -54,11 +53,10 @@ public class TestController : ControllerBase
                 task = new
                 {
                     task.Url,
-                    task.Name,
+                    task.ProductName,
                     task.Email,
-                    task.ThresholdPrice,
-                    ParseToDate = task.ParseToDate.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Queue = QueueNames.OzonCteateTasks
+                    task.ThresholdPrice,                    
+                    Queue = QueueNames.OzonCreateTasks,
                 }
             });
         }

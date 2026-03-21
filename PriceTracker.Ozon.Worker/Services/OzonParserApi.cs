@@ -8,7 +8,7 @@ namespace PriceTracker.Ozon.Worker.Services
     {
         private readonly IHttpApiClient _httpApiClient;
 
-        private readonly string _ozonApiParsePriceEndpoint = "http://opars3245.cmpl.ru/api/v1/price";
+        private readonly string _ozonApiParsePriceEndpoint = "http://opars3245.cmpl.ru/api/v1/ozonprice";
 
         public OzonParserApi(IHttpApiClient httpApiClient)
         {

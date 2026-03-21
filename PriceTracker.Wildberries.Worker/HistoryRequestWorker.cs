@@ -1,0 +1,122 @@
+﻿using Microsoft.EntityFrameworkCore;
+using PriceTracker.Shared.Contracts;
+using PriceTracker.Shared.DTO;
+using PriceTracker.Shared.Infrastructure.MessageBus;
+using PriceTracker.Wildberries.Worker.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace PriceTracker.Ozon.Worker
+{
+    public class HistoryRequestWorker : BackgroundService
+    {
+        private readonly IServiceScopeFactory _scopeFactory;        
+
+        public HistoryRequestWorker(IServiceScopeFactory scopeFactory)
+        {
+            _scopeFactory = scopeFactory;            
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {           
+
+            while (!stoppingToken.IsCancellationRequested)
+            {                
+                try
+                {                    
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+                        var dbContext = scope.ServiceProvider.GetRequiredService<WbDbContext>();
+                      
+                        var request = await messageBus.ConsumeAsync<HistoryRequest>(
+                            QueueNames.OzonHistoryRequest,
+                            stoppingToken);
+
+                        if (request != null)
+                        {
+                            await ProcessRequestAsync(request, dbContext, messageBus, stoppingToken);
+                            continue;
+                        }
+                    }
+                    
+                    await Task.Delay(1000, stoppingToken);
+                }
+                catch (OperationCanceledException oe)
+                {
+                    //logger
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    //logger
+                    await Task.Delay(1000, stoppingToken);
+                }
+            }
+            
+        }
+
+        private async Task ProcessRequestAsync(
+            HistoryRequest request,
+            WbDbContext dbContext,
+            IMessageBus messageBus,
+            CancellationToken stoppingToken)
+        {
+            try
+            {                
+                var query = dbContext.PriceHistories
+                    .Include(x => x.WbTask)
+                    .AsQueryable();
+
+                if (request.Email != null)
+                {
+                    query = query.Where(x => x.WbTask.Email == request.Email);
+                }
+
+                var history = await query
+                    .OrderByDescending(x => x.CheckedAt)
+                    .Take(request.Take)
+                    .ToListAsync(stoppingToken);
+                                
+                var groupedHistory = history.GroupBy(x => x.WbTask.Url);
+
+                var responseVM = new HistoryResponse();
+
+                foreach (var priceItems in groupedHistory)
+                {
+                    var task = priceItems.First().WbTask;
+
+                    var productItem = new ProductHistoryDto
+                    {
+                        Status = task.Status,
+                        ProductName = task.Name,
+                        PriceHistory = priceItems
+                            .Select(x => new PricePointDto
+                            {
+                                Price = x.Price,
+                                Date = x.CheckedAt
+                            })
+                            .OrderBy(x => x.Date)
+                            .ToList()
+                    };
+
+                    responseVM.Products.Add(productItem);
+                }
+                
+                await messageBus.PublishAsync(
+                    responseVM,
+                    QueueNames.OzonHistoryResponse,
+                    stoppingToken);
+                
+            }
+            catch (Exception ex)
+            {
+                //logger
+                throw; 
+            }
+        }
+    }
+}

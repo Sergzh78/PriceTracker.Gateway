@@ -1,7 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using PriceTracker.Ozon.Worker;
+using PriceTracker.Shared.Infrastructure.Http;
+using PriceTracker.Shared.Infrastructure.MessageBus;
+using PriceTracker.Shared.Messaging;
 using PriceTracker.Wildberries.Worker;
+using PriceTracker.Wildberries.Worker.Data;
+using PriceTracker.Wildberries.Worker.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddDbContext<WbDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHttpClient<IHttpApiClient, HttpApiClient>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddTransient<IWbParserApi, WbParserApi>();
+
+
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.AddTransient<IMessageBus, RabbitMqBus>();
+
+// Фоновые службы
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<HistoryRequestWorker>();
+builder.Services.AddHostedService<TaskCreationWorker>();
+
 
 var host = builder.Build();
 host.Run();

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using PriceTracker.Gateway.Data;
 using PriceTracker.Shared.Infrastructure.MessageBus;
 using PriceTracker.Shared.Messaging;
@@ -15,10 +16,10 @@ builder.Services.AddSingleton<IMessageBus, RabbitMqBus>();
 
 var app = builder.Build();
 
+app.MapControllers();
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
-
-app.MapControllers();
 
 app.MapFallbackToFile("index.html");
 
