@@ -17,7 +17,7 @@ public class TestController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        return Ok(new { message = "Gateway is alive", timestamp = DateTime.UtcNow });
+        return Ok(new { message = "Gateway is alive", timestamp = DateTime.UtcNow }); 
     }
 
 
